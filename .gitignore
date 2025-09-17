@@ -1,0 +1,104 @@
+# --- Python bytecode / caches ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+.ipynb_checkpoints/
+
+# --- Build / packaging ---
+*.egg-info/
+.eggs/
+*.egg
+build/
+dist/
+wheels/
+*.whl
+pip-wheel-metadata/
+MANIFEST
+
+# --- Coverage / testing ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+pytestdebug.log
+
+# --- Tooling / editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# --- Logs & monitoring artifacts ---
+logs/
+*.log
+reports/monitor_logs.jsonl
+reports/run_with_monitor.json
+reports/*.jsonl
+reports/*.csv
+# Keep Markdown reports versioned (do NOT ignore *.md)
+# Ignore generated plots (can be regenerated)
+reports/graphs/
+reports/*_curves.png
+reports/*_matrix.png
+reports/*diagram.png
+reports/*pareto*.png
+reports/robustness_curves.png
+reports/reliability_diagram.png
+reports/pareto_acc_*.png
+
+# --- Checkpoints & model exports ---
+# Existing tracked checkpoints will remain; new ones ignored
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+exports/
+
+# --- Data (raw & extracted). Remove lines below if you want to version data ---
+# Tarballs / archives
+*.tar
+*.tar.gz
+*.zip
+*.tgz
+# CIFAR data directory (re-downloadable)
+data/cifar-10-python.tar.gz
+data/cifar-10-batches-py/
+# Generic data catch-all (allow manual small metadata files via negation if needed)
+data/**
+!data/.gitkeep
+
+# --- Torch / performance artifacts ---
+*.prof
+profile/
+
+# --- Environment / secrets ---
+.env
+*.env
+.env.*
+
+# --- Temporary & misc ---
+*.tmp
+*.temp
+*.bak
+*.orig
+*~
+
+# --- HPC / cluster outputs ---
+slurm-*.out
+
+# --- Cache dirs from experiments (custom) ---
+.cache/
+**/cache/
+
+# --- Optional: comment out if you later add notebooks you want to track outputs for ---
+*.ipynb_checkpoints
+
+# End of .gitignore

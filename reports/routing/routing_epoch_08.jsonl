@@ -1,0 +1,4 @@
+{"sample": 0, "indices": [5, 1], "weights": [0.5, 0.5]}
+{"sample": 1, "indices": [6, 1], "weights": [0.5, 0.5]}
+{"sample": 2, "indices": [7, 3], "weights": [0.5, 0.5]}
+{"sample": 3, "indices": [3, 5], "weights": [0.5, 0.5]}
