@@ -21,6 +21,9 @@ class CostNormalizer:
         # Determine mode precedence: explicit mode overrides legacy flag
         if mode is None:
             mode = 'minmax' if use_minmax else 'ema_z'
+        # Accept legacy alias 'z' for z-normalization
+        if mode == 'z':
+            mode = 'ema_z'
         if mode not in ('ema_z','minmax'):
             raise ValueError(f"Unsupported normalization mode: {mode}")
         self.mode = mode
@@ -63,6 +66,9 @@ class CostNormalizer:
         mode: optional override ('ema_z' or 'minmax'). If None uses self.mode.
         """
         selected_mode = mode or self.mode
+        # Map alias 'z' to 'ema_z' for compatibility
+        if selected_mode == 'z':
+            selected_mode = 'ema_z'
         out = {}
         for k, v in measurements.items():
             if k not in self.stats:

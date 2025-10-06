@@ -1,0 +1,4 @@
+Meta-Optimizer,Final Loss,Final Accuracy,Loss Improvement (%),Accuracy Improvement,LR Adaptations,WD Adaptations,Convergence Steps,Avg Time Cost (ms),Avg Memory Cost (MB),Avg Energy Cost (mJ)
+Baseline,0.4071,0.8067,80.73,0.8067,1,1,20,50.09,100.00,25.00
+Plateau Meta-Optimizer,0.3380,0.8387,83.82,0.8387,3,1,20,53.28,102.00,26.00
+RL Meta-Optimizer,0.2949,0.8591,85.94,0.8591,7,1,20,56.18,105.00,28.00

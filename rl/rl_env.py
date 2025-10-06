@@ -34,7 +34,9 @@ class MoEGatingEnv(gym.Env):
             self.device = device or torch.device('cpu')
 
             # Cost model & instrumentation
-            self.cost_model = CostModel(num_experts)
+            # If using a normalizer, feed normalized measurements to cost model
+            # otherwise cost model will internally scale raw units
+            self.cost_model = CostModel(num_experts, input_mode='normalized' if use_normalizer else 'raw')
             self.probe = SystemProbe(measure_flops=measure_flops)
             self.sample_every = max(1, sample_every)
             self._episode_counter = 0
@@ -163,7 +165,10 @@ class MoEGatingEnv(gym.Env):
             'accuracy': acc,
             'cost': cost,
             'raw_reward': reward,
-            'action': action
+            'action': action,
+            'lambda_cost': self.lambda_cost,
+            'measurements_raw': measurements,
+            'measurements_norm': norm_meas
         }
         return obs_vec, reward, terminated, truncated, info
 

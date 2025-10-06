@@ -9,6 +9,7 @@ from monitor.probe import SystemProbe
 import os
 import json
 import math
+import time
 import matplotlib
 matplotlib.use('Agg') # Use non-interactive backend for CLI
 import matplotlib.pyplot as plt
@@ -176,7 +177,9 @@ def main():
         {"params": adj_params, "lr": learning_rate * adj_lr_factor},
     ])
     criterion = nn.CrossEntropyLoss()
-    probe = SystemProbe()
+    # Monitoring controls
+    MONITOR_ENABLED = os.environ.get("MONITOR_ENABLED", "1") != "0"
+    probe = SystemProbe() if MONITOR_ENABLED else None
 
     print("\nInitial Adjacency Matrix:")
     print(model.expert_graph.adjacency_matrix.data)
@@ -200,8 +203,9 @@ def main():
             inputs.requires_grad = True
 
             optimizer.zero_grad()
-
-            probe.start(model, inputs)
+            tic = time.perf_counter()
+            if MONITOR_ENABLED and probe is not None:
+                probe.start(model, inputs)
 
             if agent is not None:
                 # RL-based gating
@@ -233,7 +237,19 @@ def main():
             total_loss.backward()
             optimizer.step()
 
-            measurements = probe.stop()
+            # Measurements
+            if MONITOR_ENABLED and probe is not None:
+                measurements = probe.stop()
+            else:
+                # Lightweight baseline timing without probing memory/FLOPs
+                toc = time.perf_counter()
+                time_ms = (toc - tic) * 1000.0
+                measurements = {
+                    'time_ms': time_ms,
+                    'mem_mb': 0.0,
+                    'flops': 0,
+                    'energy_mj': None,
+                }
             epoch_measurements.append(measurements)
 
             if agent is not None:
@@ -264,15 +280,30 @@ def main():
         accuracy = 100 * correct / total
         
         # --- Logging ---
-        avg_time_ms = sum(m['time_ms'] for m in epoch_measurements) / len(epoch_measurements)
-        avg_mem_mb = sum(m['mem_mb'] for m in epoch_measurements) / len(epoch_measurements)
-        avg_flops = sum(m['flops'] for m in epoch_measurements) / len(epoch_measurements)
-        avg_energy_mj = sum(m['energy_mj'] for m in epoch_measurements) / len(epoch_measurements)
+        def _avg(key):
+            vals = [m.get(key) for m in epoch_measurements if m.get(key) is not None]
+            return sum(vals) / len(vals) if vals else None
+        avg_time_ms = _avg('time_ms')
+        avg_mem_mb = _avg('mem_mb')
+        avg_flops = _avg('flops')
+        avg_energy_mj = _avg('energy_mj')
         avg_reward = sum(agent.rewards) / len(agent.rewards) if agent is not None and agent.rewards else 0
-        
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss / len(trainloader):.4f}, Accuracy: {accuracy:.2f}%, Avg Time: {avg_time_ms:.2f}ms, Avg Mem: {avg_mem_mb:.4f}MB, Avg FLOPs: {avg_flops:.2f}, Avg Energy: {avg_energy_mj:.4f}mJ, Avg Reward: {avg_reward:.2f}")
 
-        with open("reports/monitor_logs.jsonl", "a") as f:
+        def _fmt(val, fmt):
+            return fmt.format(val) if val is not None else 'n/a'
+
+        print(
+            f"Epoch [{epoch+1}/{num_epochs}], Loss: {running_loss / len(trainloader):.4f}, "
+            f"Accuracy: {accuracy:.2f}%, Avg Time: {_fmt(avg_time_ms, '{:.2f}')}ms, "
+            f"Avg Mem: {_fmt(avg_mem_mb, '{:.4f}')}MB, Avg FLOPs: {_fmt(avg_flops, '{:.2f}')}, "
+            f"Avg Energy: {_fmt(avg_energy_mj, '{:.4f}')}mJ, Avg Reward: {avg_reward:.2f}"
+        )
+
+        # Log path can be customized; default differs for ON/OFF to simplify comparisons
+        default_log = f"reports/monitor_{'on' if MONITOR_ENABLED else 'off'}{RUN_TAG}.jsonl"
+        MONITOR_LOG_PATH = os.environ.get("MONITOR_LOG_PATH", default_log)
+        os.makedirs(os.path.dirname(MONITOR_LOG_PATH), exist_ok=True)
+        with open(MONITOR_LOG_PATH, "a") as f:
             log_entry = {
                 "epoch": epoch + 1,
                 "loss": running_loss / len(trainloader),
@@ -306,6 +337,21 @@ def main():
     print("\n--- Training Finished ---")
     print("\nFinal Adjacency Matrix:")
     print(model.expert_graph.adjacency_matrix.data)
+
+    # Optional: compare overhead if reference log is provided
+    ref_log = os.environ.get("MONITOR_COMPARE_WITH")
+    if ref_log and os.path.exists(ref_log):
+        try:
+            from reports.compare_monitor_overhead import plot_overhead
+            on_log = os.environ.get("MONITOR_LOG_PATH", f"reports/monitor_{'on' if MONITOR_ENABLED else 'off'}{RUN_TAG}.jsonl")
+            # If current run is OFF, treat ref as ON and swap
+            if not MONITOR_ENABLED:
+                summary = plot_overhead(on_log_path=ref_log, off_log_path=on_log)
+            else:
+                summary = plot_overhead(on_log_path=on_log, off_log_path=ref_log)
+            print("Monitor overhead summary:", json.dumps(summary))
+        except Exception as e:
+            print("Overhead comparison failed:", e)
 
 if __name__ == "__main__":
     main()
